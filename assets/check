@@ -27,7 +27,7 @@ namespace=$(jq -r '.source.namespace // "default"' < $payload)
 if [[ -z "$resource_type" ]] || [[ -z "$resource_name" ]]; then
     result=$(jq -n "[]")
 else
-    IMG=$($KUBECTL get -o json "$resource_type/$resource_name" -n $namespace | jq -r '.spec.template.spec.containers[0].image')
+    IMG=$(kubectl get -o json "$resource_type/$resource_name" -n $namespace | jq -r '.spec.template.spec.containers[0].image')
     result=$(jq -n "[{container:\"$IMG\"}]")
 fi
 
