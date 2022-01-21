@@ -1,0 +1,45 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "kubernetes/**"
+      - ".github/workflows/docker-image-ci.yml"
+  pull_request:
+    paths:
+      - "kubernetes/**"
+      - ".github/workflows/docker-image-ci.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: setup docker actions
+        env:
+          TZ: "America/Denver"
+        run: |
+          echo "BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+          echo "VCS_REF=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_ENV
+
+      - name: docker login
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
+          DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
+        run: docker login -u $DOCKERHUB_USER -p $DOCKERHUB_PASS
+
+      - name: Build image - concourse-k8s
+        working-directory: ./
+        run: docker build -t lodotek/concourse-k8s:latest
+          --build-arg VCS_REF=${VCS_REF}
+          --build-arg BUILD_DATE=${BUILD_DATE} .
+      - name: Push Image - concourse-k8s
+        if: github.event_name == 'push'
+        run: docker push lodotek/concourse-k8s:latest
+      # - name: Update Microbadger
+      #   if: github.event_name == 'push'
+      #   run: curl -X POST -d {} https://hooks.microbadger.com/images/lodotek/nginx/7QCS0ho29O-wTHs3nIw5N2XZls8=
